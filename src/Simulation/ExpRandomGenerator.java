@@ -1,8 +1,10 @@
 package Simulation;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
 
-public class ExpRandomGenerator extends Random {
+public class ExpRandomGenerator extends CustomRandomGenerator {
     private Double m_mean;
 
     public ExpRandomGenerator(Double m_mean) {
