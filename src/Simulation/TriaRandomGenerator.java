@@ -1,9 +1,5 @@
 package Simulation;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Random;
-
 public class TriaRandomGenerator extends CustomRandomGenerator {
     private double m_minValue;
     private double m_maxValue;

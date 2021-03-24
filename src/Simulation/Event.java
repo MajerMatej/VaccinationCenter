@@ -3,7 +3,7 @@ package Simulation;
 import java.util.Objects;
 
 public abstract class Event implements Comparable{
-    protected Double m_eventTime;
+    protected double m_eventTime;
     protected EventSimulationCore m_evSimCore;
 
     public Event(Double m_eventTime, EventSimulationCore m_evSimCore) {
@@ -13,11 +13,11 @@ public abstract class Event implements Comparable{
 
     public abstract void execute();
 
-    public Double getEventTime() {
+    public double getEventTime() {
         return m_eventTime;
     }
 
-    public void setEventTime(Double eventTime) {
+    public void setEventTime(double eventTime) {
         this.m_eventTime = eventTime;
     }
 
@@ -32,7 +32,7 @@ public abstract class Event implements Comparable{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Event event = (Event) o;
-        return m_eventTime.equals(event.m_eventTime) &&
+        return m_eventTime == (event.m_eventTime) &&
                 Objects.equals(m_evSimCore, event.m_evSimCore);
     }
 

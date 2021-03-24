@@ -12,7 +12,7 @@ public abstract class EventSimulationCore extends SimulationCore{
         this.m_eventCalendar = new PriorityQueue<>();
     }
 
-    protected void doReplication(Double endTime) {
+    protected void doReplication(double endTime) {
         while(m_actSimTime < endTime && !m_eventCalendar.isEmpty()) {
             Event event = m_eventCalendar.poll();
             m_actSimTime = event.getEventTime();
