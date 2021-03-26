@@ -18,7 +18,6 @@ public abstract class EventSimulationCore extends SimulationCore{
             m_actSimTime = event.getEventTime();
             event.execute();
 
-            //System.out.println("\tCas: " + m_actSimTime);
         }
     }
 

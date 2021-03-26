@@ -17,5 +17,7 @@ public class CustomerArrivalEvent extends Event {
         simCore.addEventToCalendar(new CustomerArrivalEvent(
                 simCore.getNextArrivalTime(), simCore
         ));
+
+        simCore.addCustToRegQueue(customer);
     }
 }

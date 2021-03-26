@@ -6,12 +6,7 @@ import Simulation.TriaRandomGenerator;
 public class Main {
 
     public static void main(String[] args) {
-        ExpRandomGenerator gen = new ExpRandomGenerator(5.0);
-        gen.writeToFile("expSamples.txt", 100000);
-
-        TriaRandomGenerator genT = new TriaRandomGenerator(20.0, 100.0, 75.0);
-        genT.writeToFile("triaSamples.txt", 100000);
-
-	// write your code here
+       VaccCenterSimCore simCore = new VaccCenterSimCore(1,1,1,1,3, 200000000);
+       simCore.simulate();
     }
 }

@@ -9,7 +9,7 @@ public class Customer {
     private double m_timeMedicalEnd;
     private double m_timeVaccinationStart;
     private double m_timeVaccinationEnd;
-    private double m_timeWaitingTime;
+    private double m_timeWaiting;
 
     public Customer(int m_id) {
         this.m_id = m_id;
@@ -79,12 +79,12 @@ public class Customer {
         this.m_timeVaccinationEnd = timeVaccinationEnd;
     }
 
-    public double getTimeWaitingTime() {
-        return m_timeWaitingTime;
+    public double getTimeWaiting() {
+        return m_timeWaiting;
     }
 
-    public void setTimeWaitingTime(double timeWaitingTime) {
-        this.m_timeWaitingTime = timeWaitingTime;
+    public void setTimeWaiting(double timeWaiting) {
+        this.m_timeWaiting = timeWaiting;
     }
 
 

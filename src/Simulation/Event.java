@@ -6,9 +6,9 @@ public abstract class Event implements Comparable{
     protected double m_eventTime;
     protected EventSimulationCore m_evSimCore;
 
-    public Event(Double m_eventTime, EventSimulationCore m_evSimCore) {
-        this.m_eventTime = m_eventTime;
-        this.m_evSimCore = m_evSimCore;
+    public Event(double eventTime, EventSimulationCore evSimCore) {
+        this.m_eventTime = eventTime;
+        this.m_evSimCore = evSimCore;
     }
 
     public abstract void execute();
