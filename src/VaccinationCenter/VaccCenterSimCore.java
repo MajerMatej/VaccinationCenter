@@ -20,7 +20,7 @@ public class VaccCenterSimCore extends EventSimulationCore {
     private NormalRandomGenerator m_missedAppDecisionGenerator;
 
     //todo delete this
-    //private ExpRandomGenerator m_arrivalgen;
+    private ExpRandomGenerator m_arrivalgen;
 
     private LinkedList<NormalRandomGenerator> m_regEmpDecGenerators;
     private LinkedList<NormalRandomGenerator> m_medEmpDecGenerators;
@@ -37,13 +37,23 @@ public class VaccCenterSimCore extends EventSimulationCore {
     private LinkedList<Nurse> m_nurses;
     // Stat variables -----------------------------------------
     private double m_timeInRegQueueStat;
-    private int m_registeredCustomers;
+    private double m_registeredCustomers;
     private double m_timeInMedQueueStat;
-    private int m_medicalCustomers;
+    private double m_medicalCustomers;
     private double m_timeInVaccQueueStat;
-    private int m_vaccinatedCustomers;
+    private double m_vaccinatedCustomers;
     private double m_timeInSystem;
-    private int m_customersCompletedCount;
+    private double m_customersCompletedCount;
+
+    // Global Stat variables -----------------------------------------
+    private double m_timeInRegQueueStatGlobal;
+    private double m_registeredCustomersGlobal;
+    private double m_timeInMedQueueStatGlobal;
+    private double m_medicalCustomersGlobal;
+    private double m_timeInVaccQueueStatGlobal;
+    private double m_vaccinatedCustomersGlobal;
+    private double m_timeInSystemGlobal;
+    private double m_customersCompletedCountGlobal;
 
     // Others -------------------------------------------------
     private int m_seed;
@@ -83,6 +93,15 @@ public class VaccCenterSimCore extends EventSimulationCore {
         m_missedCustomers = 0;
         m_timeInSystem = 0;
         m_customersCompletedCount = 0;
+
+        m_timeInRegQueueStatGlobal = 0;
+        m_registeredCustomersGlobal = 0;
+        m_timeInMedQueueStatGlobal = 0;
+        m_medicalCustomersGlobal = 0;
+        m_timeInVaccQueueStatGlobal = 0;
+        m_vaccinatedCustomersGlobal = 0;
+        m_timeInSystemGlobal = 0;
+        m_customersCompletedCountGlobal = 0;
         initGenerators(seed, numOfAdminWorkers, numOfDoctors, numOfNurses);
         initQueues();
         initEmployees(numOfAdminWorkers, numOfDoctors, numOfNurses);
@@ -130,7 +149,7 @@ public class VaccCenterSimCore extends EventSimulationCore {
         }
 
         //todo delete this
-        //m_arrivalgen = new ExpRandomGenerator(5 * 60);
+        m_arrivalgen = new ExpRandomGenerator(1.5 *60);
     }
 
     private void initEmployees(int numOfAdminWorkers, int numOfDoctors, int numOfNurses) {
@@ -153,28 +172,71 @@ public class VaccCenterSimCore extends EventSimulationCore {
         }
     }
 
+    private void reset() {
+        m_customerSequence = 0;
+        m_timeInRegQueueStat = 0;
+        m_timeInMedQueueStat = 0;
+        m_timeInVaccQueueStat = 0;
+        m_registeredCustomers = 0;
+        m_medicalCustomers = 0;
+        m_vaccinatedCustomers = 0;
+        m_missedAppointmentNum = 0;
+        m_missedCustomers = 0;
+        m_timeInSystem = 0;
+        m_customersCompletedCount = 0;
+
+        m_registrationQueue.clear();
+        m_medicalQueue.clear();
+        m_vaccinationQueue.clear();
+        m_waitingRoom.clear();
+
+        for (AdminWorker worker : m_adminWorkers) {
+            worker.setAvailable();
+        }
+
+        for (Doctor doctor : m_doctors) {
+            doctor.setAvailable();
+        }
+
+        for (Nurse nurse : m_nurses) {
+            nurse.setAvailable();
+        }
+
+        m_actSimTime = 0.0;
+    }
+
     @Override
     protected void onSimulationStart() {
-        Event firstArrival = new CustomerArrivalEvent(0, this);
-        m_eventCalendar.add(firstArrival);
+
     }
 
     @Override
     protected void onSimulationEnd() {
+        System.out.println("Average time in registration Queue: " + m_timeInRegQueueStatGlobal / m_numOfReplications);
+        System.out.println("Average ppl in registration Queue: " + m_registeredCustomersGlobal / m_numOfReplications);
+        System.out.println("Average time in medical examination Queue: " + m_timeInMedQueueStatGlobal / m_numOfReplications);
+        System.out.println("Average ppl in medical examination Queue: " + m_medicalCustomersGlobal / m_numOfReplications);
+        System.out.println("Average time in vaccination Queue: " + m_timeInVaccQueueStatGlobal / m_numOfReplications);
+        System.out.println("Average ppl in vaccination Queue: " + m_vaccinatedCustomersGlobal / m_numOfReplications);
+        System.out.println("Average time in system: " + m_timeInSystemGlobal / m_numOfReplications);
+        System.out.println("Average customers completed: " + m_customersCompletedCountGlobal / m_numOfReplications);
 
     }
 
     @Override
     protected void onReplicationStart() {
+        Event firstArrival = new CustomerArrivalEvent(0, this);
+        m_eventCalendar.add(firstArrival);
         m_missedAppointmentNum = m_missedAppointmentsGenerator.nextDouble();
+
         doReplication(m_repTime);
     }
 
     @Override
     protected void onReplicationEnd() {
         //System.out.println("Pocet zakaznikov: " + m_servedCustomer.getID());
-        System.out.println("Celkovy cas v rade: " + m_timeInRegQueueStat);
-        System.out.println("Priemerny cas v rade na registraciu: " + (m_timeInRegQueueStat / m_registeredCustomers));
+        //System.out.println("Celkovy cas v rade: " + m_timeInRegQueueStat);
+        /*System.out.println("Priemerny cas v rade na registraciu: " + (m_timeInRegQueueStat / m_registeredCustomers));
         System.out.println("Priemerny pocet ludi v rade na registraciu: " + m_timeInRegQueueStat / m_actSimTime);
         System.out.println("Tolkoto sracov neprislo: " + m_missedCustomers);
 
@@ -189,6 +251,19 @@ public class VaccCenterSimCore extends EventSimulationCore {
         System.out.println("Pocet ludi v systeme: " + (
                 m_registrationQueue.size() + m_medicalQueue.size() +
                         m_vaccinationQueue.size() + m_waitingRoom.size()));
+*/
+        m_timeInRegQueueStatGlobal += (m_timeInRegQueueStat / m_registeredCustomers);
+        m_registeredCustomersGlobal += (m_timeInRegQueueStat / m_actSimTime);
+        m_timeInMedQueueStatGlobal += (m_timeInMedQueueStat / m_medicalCustomers);
+        m_medicalCustomersGlobal  += (m_timeInMedQueueStat / m_actSimTime);
+        m_timeInVaccQueueStatGlobal += (m_timeInVaccQueueStat / m_vaccinatedCustomers);
+        m_vaccinatedCustomersGlobal += (m_timeInVaccQueueStat / m_actSimTime);
+        m_timeInSystemGlobal += (m_timeInSystem / m_customersCompletedCount);
+        m_customersCompletedCountGlobal += m_customersCompletedCount;
+
+        reset();
+
+        this.m_eventCalendar.clear();
     }
 
     @Override
@@ -210,10 +285,11 @@ public class VaccCenterSimCore extends EventSimulationCore {
 
     public double getNextArrivalTime() {
         double time = m_actSimTime;
-        while(!customerArrived()) {
+
+        /*while(!customerArrived()) {
             time += 60;
-        }
-        return time + 60;
+        }*/
+        return time + m_arrivalgen.nextDouble();
     }
 //----------------------------------------------------------------------------------------
 //  ************************** Registration sequence *************************************
