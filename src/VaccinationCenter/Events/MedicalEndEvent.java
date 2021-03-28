@@ -1,8 +1,10 @@
-package VaccinationCenter;
+package VaccinationCenter.Events;
 
 import Simulation.CustomerEmployeeEvent;
 import Simulation.EventSimulationCore;
+import VaccinationCenter.Customer;
 import VaccinationCenter.Employee.Employee;
+import VaccinationCenter.VaccCenterSimCore;
 
 public class MedicalEndEvent extends CustomerEmployeeEvent {
     public MedicalEndEvent(double eventTime, VaccCenterSimCore evSimCore, Customer customer, Employee employee) {

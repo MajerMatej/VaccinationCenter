@@ -6,6 +6,7 @@ import VaccinationCenter.Employee.Doctor;
 import VaccinationCenter.Employee.Nurse;
 import Simulation.Interfaces.IObserver;
 import Simulation.Interfaces.ISubject;
+import VaccinationCenter.Events.*;
 
 import java.util.*;
 

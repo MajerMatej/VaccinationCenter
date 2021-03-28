@@ -1,7 +1,9 @@
-package VaccinationCenter;
+package VaccinationCenter.Events;
 
 import Simulation.Event;
 import Simulation.EventSimulationCore;
+import VaccinationCenter.Customer;
+import VaccinationCenter.VaccCenterSimCore;
 
 public class WaitingEndEvent extends Event {
     Customer m_customer;

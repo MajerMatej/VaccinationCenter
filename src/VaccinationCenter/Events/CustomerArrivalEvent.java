@@ -1,7 +1,8 @@
-package VaccinationCenter;
+package VaccinationCenter.Events;
 
 import Simulation.Event;
-import Simulation.EventSimulationCore;
+import VaccinationCenter.Customer;
+import VaccinationCenter.VaccCenterSimCore;
 
 public class CustomerArrivalEvent extends Event {
 
