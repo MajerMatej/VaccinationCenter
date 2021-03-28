@@ -17,10 +17,9 @@ public abstract class EventSimulationCore extends SimulationCore{
             Event event = m_eventCalendar.poll();
             m_actSimTime = event.getEventTime();
             event.execute();
-
+            notifyObservers();
         }
     }
-
     public void addEventToCalendar(Event event) {
         m_eventCalendar.add(event);
     }
@@ -28,6 +27,5 @@ public abstract class EventSimulationCore extends SimulationCore{
     public double getActSimTime() {
         return m_actSimTime;
     }
-
 
 }

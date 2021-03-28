@@ -4,12 +4,12 @@ import Simulation.*;
 import VaccinationCenter.Employee.AdminWorker;
 import VaccinationCenter.Employee.Doctor;
 import VaccinationCenter.Employee.Nurse;
+import Simulation.Interfaces.IObserver;
+import Simulation.Interfaces.ISubject;
 
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 
-public class VaccCenterSimCore extends EventSimulationCore {
+public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
     // Generators ---------------------------------------------
     private NormalRandomGenerator m_registrationGenerator;
     //private ExpRandomGenerator m_registrationGenerator;
@@ -36,30 +36,13 @@ public class VaccCenterSimCore extends EventSimulationCore {
     private LinkedList<Doctor> m_doctors;
     private LinkedList<Nurse> m_nurses;
     // Stat variables -----------------------------------------
-    private double m_timeInRegQueueStat;
-    private double m_registeredCustomers;
-    private double m_timeInMedQueueStat;
-    private double m_medicalCustomers;
-    private double m_timeInVaccQueueStat;
-    private double m_vaccinatedCustomers;
-    private double m_timeInSystem;
-    private double m_customersCompletedCount;
-
-    // Global Stat variables -----------------------------------------
-    private double m_timeInRegQueueStatGlobal;
-    private double m_registeredCustomersGlobal;
-    private double m_timeInMedQueueStatGlobal;
-    private double m_medicalCustomersGlobal;
-    private double m_timeInVaccQueueStatGlobal;
-    private double m_vaccinatedCustomersGlobal;
-    private double m_timeInSystemGlobal;
-    private double m_customersCompletedCountGlobal;
+    private HashMap<String, Double> m_statistics;
 
     // Others -------------------------------------------------
     private int m_seed;
     private int m_customerSequence;
     private double m_missedAppointmentNum;
-    private int m_missedCustomers;
+    //private int m_missedCustomers;
     private double m_repTime;
 
     public VaccCenterSimCore(int numberOfReplications) {
@@ -81,27 +64,33 @@ public class VaccCenterSimCore extends EventSimulationCore {
     }
 
     private void init(int seed, int numOfAdminWorkers, int numOfDoctors, int numOfNurses) {
+        m_statistics = new HashMap<>();
+        m_statistics.put("SumTimeRegQueue", 0.0);
+        m_statistics.put("SumTimeMedQueue", 0.0);
+        m_statistics.put("SumTimeVaccQueue", 0.0);
+        m_statistics.put("RegisteredCustomers", 0.0);
+        m_statistics.put("ExaminedCustomers", 0.0);
+        m_statistics.put("VaccinatedCustomers", 0.0);
+        m_statistics.put("MissedCustomers", 0.0);
+        m_statistics.put("SumTimeInSystem", 0.0);
+        m_statistics.put("SumCustomersCompleted", 0.0);
+
+        m_statistics.put("SumTimeRegQueueGlobal", 0.0);
+        m_statistics.put("SumTimeMedQueueGlobal", 0.0);
+        m_statistics.put("SumTimeVaccQueueGlobal", 0.0);
+        m_statistics.put("RegisteredCustomersGlobal", 0.0);
+        m_statistics.put("ExaminedCustomersGlobal", 0.0);
+        m_statistics.put("VaccinatedCustomersGlobal", 0.0);
+        m_statistics.put("MissedCustomersGlobal", 0.0);
+        m_statistics.put("SumTimeInSystemGlobal", 0.0);
+        m_statistics.put("SumCustomersCompletedGlobal", 0.0);
+        m_statistics.put("CompleteReplications", 0.0);
+
         m_customerSequence = 0;
         m_seed = seed;
-        m_timeInRegQueueStat = 0;
-        m_timeInMedQueueStat = 0;
-        m_timeInVaccQueueStat = 0;
-        m_registeredCustomers = 0;
-        m_medicalCustomers = 0;
-        m_vaccinatedCustomers = 0;
-        m_missedAppointmentNum = 0;
-        m_missedCustomers = 0;
-        m_timeInSystem = 0;
-        m_customersCompletedCount = 0;
 
-        m_timeInRegQueueStatGlobal = 0;
-        m_registeredCustomersGlobal = 0;
-        m_timeInMedQueueStatGlobal = 0;
-        m_medicalCustomersGlobal = 0;
-        m_timeInVaccQueueStatGlobal = 0;
-        m_vaccinatedCustomersGlobal = 0;
-        m_timeInSystemGlobal = 0;
-        m_customersCompletedCountGlobal = 0;
+        m_missedAppointmentNum = 0;
+
         initGenerators(seed, numOfAdminWorkers, numOfDoctors, numOfNurses);
         initQueues();
         initEmployees(numOfAdminWorkers, numOfDoctors, numOfNurses);
@@ -149,7 +138,7 @@ public class VaccCenterSimCore extends EventSimulationCore {
         }
 
         //todo delete this
-        m_arrivalgen = new ExpRandomGenerator(1.5 *60);
+        m_arrivalgen = new ExpRandomGenerator(seedGenerator.nextInt(),1.5 *60);
     }
 
     private void initEmployees(int numOfAdminWorkers, int numOfDoctors, int numOfNurses) {
@@ -173,17 +162,19 @@ public class VaccCenterSimCore extends EventSimulationCore {
     }
 
     private void reset() {
+        m_statistics.replace("SumTimeRegQueue", 0.0);
+        m_statistics.replace("SumTimeMedQueue", 0.0);
+        m_statistics.replace("SumTimeVaccQueue", 0.0);
+        m_statistics.replace("RegisteredCustomers", 0.0);
+        m_statistics.replace("ExaminedCustomers", 0.0);
+        m_statistics.replace("VaccinatedCustomers", 0.0);
+        m_statistics.replace("MissedCustomers", 0.0);
+        m_statistics.replace("SumTimeInSystem", 0.0);
+        m_statistics.replace("SumCustomersCompleted", 0.0);
+
         m_customerSequence = 0;
-        m_timeInRegQueueStat = 0;
-        m_timeInMedQueueStat = 0;
-        m_timeInVaccQueueStat = 0;
-        m_registeredCustomers = 0;
-        m_medicalCustomers = 0;
-        m_vaccinatedCustomers = 0;
+
         m_missedAppointmentNum = 0;
-        m_missedCustomers = 0;
-        m_timeInSystem = 0;
-        m_customersCompletedCount = 0;
 
         m_registrationQueue.clear();
         m_medicalQueue.clear();
@@ -212,14 +203,30 @@ public class VaccCenterSimCore extends EventSimulationCore {
 
     @Override
     protected void onSimulationEnd() {
-        System.out.println("Average time in registration Queue: " + m_timeInRegQueueStatGlobal / m_numOfReplications);
-        System.out.println("Average ppl in registration Queue: " + m_registeredCustomersGlobal / m_numOfReplications);
-        System.out.println("Average time in medical examination Queue: " + m_timeInMedQueueStatGlobal / m_numOfReplications);
-        System.out.println("Average ppl in medical examination Queue: " + m_medicalCustomersGlobal / m_numOfReplications);
-        System.out.println("Average time in vaccination Queue: " + m_timeInVaccQueueStatGlobal / m_numOfReplications);
-        System.out.println("Average ppl in vaccination Queue: " + m_vaccinatedCustomersGlobal / m_numOfReplications);
-        System.out.println("Average time in system: " + m_timeInSystemGlobal / m_numOfReplications);
-        System.out.println("Average customers completed: " + m_customersCompletedCountGlobal / m_numOfReplications);
+        /*System.out.println("Average time in registration Queue: " +
+                m_statistics.get("SumTimeRegQueueGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average ppl in registration Queue: " +
+                m_statistics.get("RegisteredCustomersGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average time in medical examination Queue: " +
+                m_statistics.get("SumTimeMedQueueGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average ppl in medical examination Queue: " +
+                m_statistics.get("ExaminedCustomersGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average time in vaccination Queue: " +
+                m_statistics.get("SumTimeVaccQueueGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average ppl in vaccination Queue: " +
+                m_statistics.get("VaccinatedCustomersGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average time in system: " +
+                m_statistics.get("SumTimeInSystemGlobal") /
+                        m_statistics.get("CompleteReplications"));
+        System.out.println("Average customers completed: " +
+                m_statistics.get("SumCustomersCompletedGlobal") /
+                        m_statistics.get("CompleteReplications"));*/
 
     }
 
@@ -234,34 +241,35 @@ public class VaccCenterSimCore extends EventSimulationCore {
 
     @Override
     protected void onReplicationEnd() {
-        //System.out.println("Pocet zakaznikov: " + m_servedCustomer.getID());
-        //System.out.println("Celkovy cas v rade: " + m_timeInRegQueueStat);
-        /*System.out.println("Priemerny cas v rade na registraciu: " + (m_timeInRegQueueStat / m_registeredCustomers));
-        System.out.println("Priemerny pocet ludi v rade na registraciu: " + m_timeInRegQueueStat / m_actSimTime);
-        System.out.println("Tolkoto sracov neprislo: " + m_missedCustomers);
-
-        System.out.println("Priemerny cas v rade na prehliadku: " + (m_timeInMedQueueStat / m_medicalCustomers));
-        System.out.println("Priemerny pocet ludi v rade na prehliadku: " + m_timeInMedQueueStat / m_actSimTime);
-
-        System.out.println("Priemerny cas v rade na ockovanie: " + (m_timeInVaccQueueStat / m_vaccinatedCustomers));
-        System.out.println("Priemerny pocet ludi v rade na ockovanie: " + m_timeInVaccQueueStat / m_actSimTime);
-
-        System.out.println("Priemerny cas v systeme: " + (m_timeInSystem / m_customersCompletedCount));
-        System.out.println("Pocet obsluzenych ludi: " + m_customersCompletedCount);
-        System.out.println("Pocet ludi v systeme: " + (
-                m_registrationQueue.size() + m_medicalQueue.size() +
-                        m_vaccinationQueue.size() + m_waitingRoom.size()));
-*/
-        m_timeInRegQueueStatGlobal += (m_timeInRegQueueStat / m_registeredCustomers);
-        m_registeredCustomersGlobal += (m_timeInRegQueueStat / m_actSimTime);
-        m_timeInMedQueueStatGlobal += (m_timeInMedQueueStat / m_medicalCustomers);
-        m_medicalCustomersGlobal  += (m_timeInMedQueueStat / m_actSimTime);
-        m_timeInVaccQueueStatGlobal += (m_timeInVaccQueueStat / m_vaccinatedCustomers);
-        m_vaccinatedCustomersGlobal += (m_timeInVaccQueueStat / m_actSimTime);
-        m_timeInSystemGlobal += (m_timeInSystem / m_customersCompletedCount);
-        m_customersCompletedCountGlobal += m_customersCompletedCount;
+        m_statistics.replace("SumTimeRegQueueGlobal",
+                m_statistics.get("SumTimeRegQueueGlobal") +
+                        m_statistics.get("SumTimeRegQueue") / m_statistics.get("RegisteredCustomers"));
+        m_statistics.replace("SumTimeMedQueueGlobal",
+                m_statistics.get("SumTimeMedQueueGlobal") +
+                        m_statistics.get("SumTimeMedQueue") / m_statistics.get("ExaminedCustomers"));
+        m_statistics.replace("SumTimeVaccQueueGlobal",
+                m_statistics.get("SumTimeVaccQueueGlobal") +
+                        m_statistics.get("SumTimeVaccQueue") / m_statistics.get("VaccinatedCustomers"));
+        m_statistics.replace("RegisteredCustomersGlobal",
+                m_statistics.get("RegisteredCustomersGlobal") +
+                        m_statistics.get("SumTimeRegQueue") / m_actSimTime);
+        m_statistics.replace("ExaminedCustomersGlobal",
+                m_statistics.get("ExaminedCustomersGlobal") +
+                        m_statistics.get("SumTimeMedQueue") / m_actSimTime);
+        m_statistics.replace("VaccinatedCustomersGlobal",
+                m_statistics.get("VaccinatedCustomersGlobal") +
+                        m_statistics.get("SumTimeVaccQueue") / m_actSimTime);
+        m_statistics.replace("SumTimeInSystemGlobal",
+                m_statistics.get("SumTimeInSystemGlobal") +
+                        m_statistics.get("SumTimeInSystem") / m_statistics.get("SumCustomersCompleted"));
+        m_statistics.replace("SumCustomersCompletedGlobal",
+                m_statistics.get("SumCustomersCompletedGlobal") +
+                        m_statistics.get("SumCustomersCompleted"));
 
         reset();
+
+        m_statistics.replace("CompleteReplications",
+                m_statistics.get("CompleteReplications").doubleValue() + 1);
 
         this.m_eventCalendar.clear();
     }
@@ -277,7 +285,8 @@ public class VaccCenterSimCore extends EventSimulationCore {
 
     public boolean customerArrived() {
         if(m_missedAppDecisionGenerator.nextDouble() < m_missedAppointmentNum / (m_repTime / 60)) {
-            m_missedCustomers++;
+            m_statistics.replace("MissedCustomers",
+                    m_statistics.get("MissedCustomers") + 1);
             return false;
         }
         return true;
@@ -338,8 +347,11 @@ public class VaccCenterSimCore extends EventSimulationCore {
     }
 
     public void endCustomerRegistration(Customer customer) {
-        m_timeInRegQueueStat += (customer.getTimeRegStart() - customer.getTimeOfArrival());
-        m_registeredCustomers++;
+        m_statistics.replace("SumTimeRegQueue",
+                m_statistics.get("SumTimeRegQueue") +
+                        (customer.getTimeRegStart() - customer.getTimeOfArrival()));
+        m_statistics.replace("RegisteredCustomers",
+                m_statistics.get("RegisteredCustomers") + 1);
         //go to next queue
         addCustToMedQueue(customer);
     }
@@ -391,8 +403,11 @@ public class VaccCenterSimCore extends EventSimulationCore {
     }
 
     public void endCustomerMedical(Customer customer) {
-        m_timeInMedQueueStat += (customer.getTimeMedicalStart() - customer.getTimeRegEnd());
-        m_medicalCustomers++;
+        m_statistics.replace("SumTimeMedQueue",
+                m_statistics.get("SumTimeMedQueue") +
+                        (customer.getTimeMedicalStart() - customer.getTimeRegEnd()));
+        m_statistics.replace("ExaminedCustomers",
+                m_statistics.get("ExaminedCustomers") + 1);
         //go to next queue
         addCustToVaccQueue(customer);
     }
@@ -444,8 +459,11 @@ public class VaccCenterSimCore extends EventSimulationCore {
     }
 
     public void endCustomerVaccination(Customer customer) {
-        m_timeInVaccQueueStat += (customer.getTimeVaccinationStart() - customer.getTimeMedicalEnd());
-        m_vaccinatedCustomers++;
+        m_statistics.replace("SumTimeVaccQueue",
+                m_statistics.get("SumTimeVaccQueue") +
+                        (customer.getTimeVaccinationStart() - customer.getTimeMedicalEnd()));
+        m_statistics.replace("VaccinatedCustomers",
+                m_statistics.get("VaccinatedCustomers") + 1);
         //go to next queue
 
         double rand = m_waitingTimeGenerator.nextDouble();
@@ -459,8 +477,11 @@ public class VaccCenterSimCore extends EventSimulationCore {
 //  ************************** End of story for the customer *************************************
 
     public void endSystem(Customer customer) {
-        m_timeInSystem += (m_actSimTime - customer.getTimeOfArrival());
-        m_customersCompletedCount++;
+        m_statistics.replace("SumTimeInSystem",
+                m_statistics.get("SumTimeInSystem") +
+                (m_actSimTime - customer.getTimeOfArrival()));
+        m_statistics.replace("SumCustomersCompleted",
+                m_statistics.get("SumCustomersCompleted") + 1);
         Customer toBeRemoved = null;
         for (Customer cust : m_waitingRoom) {
             if(customer == cust) {
@@ -469,6 +490,17 @@ public class VaccCenterSimCore extends EventSimulationCore {
         }
         if(toBeRemoved != null) {
             m_waitingRoom.remove(toBeRemoved);
+        }
+    }
+    // --------------------------------------------------------------------
+    public HashMap<String, Double> getStatics() {
+        return m_statistics;
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (IObserver observer : m_observers) {
+            observer.update(m_statistics);
         }
     }
 }

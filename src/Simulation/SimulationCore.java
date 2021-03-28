@@ -1,10 +1,18 @@
 package Simulation;
 
-public abstract class SimulationCore {
+import Simulation.Interfaces.IObserver;
+import Simulation.Interfaces.ISubject;
+
+import java.util.LinkedList;
+import java.util.List;
+
+public abstract class SimulationCore implements ISubject {
     protected int m_numOfReplications;
+    protected List<IObserver> m_observers;
 
     public SimulationCore(int numberOfReplications) {
         this.m_numOfReplications = numberOfReplications;
+        m_observers = new LinkedList<>();
     }
 
     protected abstract void onSimulationStart();
@@ -19,5 +27,22 @@ public abstract class SimulationCore {
             onReplicationEnd();
         }
         onSimulationEnd();
+    }
+
+    @Override
+    public void subscribeObserver(IObserver observer) {
+        m_observers.add(observer);
+    }
+
+    @Override
+    public void unsubscribeObserver(IObserver observer) {
+        m_observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (IObserver observer : m_observers) {
+            observer.update(null);
+        }
     }
 }
