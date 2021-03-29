@@ -13,11 +13,12 @@ public class MedicalEndEvent extends CustomerEmployeeEvent {
 
     @Override
     public void execute() {
-        m_employee.setAvailable();
+        m_employee.setAvailable(m_evSimCore.getActSimTime());
         m_customer.setTimeMedicalEnd(m_evSimCore.getActSimTime());
         VaccCenterSimCore simCore = (VaccCenterSimCore)m_evSimCore;
 
         simCore.endCustomerMedical(m_customer);
         simCore.medicalNextCustomer();
+        simCore.updateAvailableDoctors();
     }
 }

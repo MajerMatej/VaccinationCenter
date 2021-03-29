@@ -21,7 +21,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
     private NormalRandomGenerator m_missedAppDecisionGenerator;
 
     //todo delete this
-    private ExpRandomGenerator m_arrivalgen;
+    //private ExpRandomGenerator m_arrivalgen;
 
     private LinkedList<NormalRandomGenerator> m_regEmpDecGenerators;
     private LinkedList<NormalRandomGenerator> m_medEmpDecGenerators;
@@ -85,7 +85,27 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         m_statistics.put("MissedCustomersGlobal", 0.0);
         m_statistics.put("SumTimeInSystemGlobal", 0.0);
         m_statistics.put("SumCustomersCompletedGlobal", 0.0);
+
         m_statistics.put("CompleteReplications", 0.0);
+        m_statistics.put("ActualSimulationTime", 0.0);
+
+        m_statistics.put("AdminWorkersUtilization", 0.0);
+        m_statistics.put("DoctorsUtilization", 0.0);
+        m_statistics.put("NursesUtilization", 0.0);
+
+        m_statistics.put("AdminWorkersAvailability", 0.0);
+        m_statistics.put("DoctorsAvailability", 0.0);
+        m_statistics.put("NursesAvailability", 0.0);
+
+        m_statistics.put("RegQueueSize", 0.0);
+        m_statistics.put("MedQueueSize", 0.0);
+        m_statistics.put("VaccQueueSize", 0.0);
+        m_statistics.put("WaitingRoomSize", 0.0);
+        m_statistics.put("SumTimeInWaitingRoom", 0.0);
+
+        m_statistics.put("WorkerUtilizationGlobal", 0.0);
+        m_statistics.put("DoctorUtilizationGlobal", 0.0);
+        m_statistics.put("NurseUtilizationGlobal", 0.0);
 
         m_customerSequence = 0;
         m_seed = seed;
@@ -139,7 +159,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         }
 
         //todo delete this
-        m_arrivalgen = new ExpRandomGenerator(seedGenerator.nextInt(),1.5 *60);
+        //m_arrivalgen = new ExpRandomGenerator(seedGenerator.nextInt(),1.5 *60);
     }
 
     private void initEmployees(int numOfAdminWorkers, int numOfDoctors, int numOfNurses) {
@@ -173,6 +193,21 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         m_statistics.replace("SumTimeInSystem", 0.0);
         m_statistics.replace("SumCustomersCompleted", 0.0);
 
+        m_statistics.replace("AdminWorkersUtilization", 0.0);
+        m_statistics.replace("DoctorsUtilization", 0.0);
+        m_statistics.replace("NursesUtilization", 0.0);
+
+        m_statistics.replace("AdminWorkersAvailability", 0.0);
+        m_statistics.replace("DoctorsAvailability", 0.0);
+        m_statistics.replace("NursesAvailability", 0.0);
+
+        m_statistics.replace("RegQueueSize", 0.0);
+        m_statistics.replace("MedQueueSize", 0.0);
+        m_statistics.replace("VaccQueueSize", 0.0);
+        m_statistics.replace("WaitingRoomSize", 0.0);
+        m_statistics.replace("SumTimeInWaitingRoom", 0.0);
+
+
         m_customerSequence = 0;
 
         m_missedAppointmentNum = 0;
@@ -182,19 +217,22 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         m_vaccinationQueue.clear();
         m_waitingRoom.clear();
 
+        m_actSimTime = 0.0;
+
         for (AdminWorker worker : m_adminWorkers) {
-            worker.setAvailable();
+            worker.setAvailable(m_actSimTime);
+            worker.resetTime();
         }
 
         for (Doctor doctor : m_doctors) {
-            doctor.setAvailable();
+            doctor.setAvailable(m_actSimTime);
+            doctor.resetTime();
         }
 
         for (Nurse nurse : m_nurses) {
-            nurse.setAvailable();
+            nurse.setAvailable(m_actSimTime);
+            nurse.resetTime();
         }
-
-        m_actSimTime = 0.0;
     }
 
     @Override
@@ -228,7 +266,6 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         System.out.println("Average customers completed: " +
                 m_statistics.get("SumCustomersCompletedGlobal") /
                         m_statistics.get("CompleteReplications"));*/
-
     }
 
     @Override
@@ -267,11 +304,23 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
                 m_statistics.get("SumCustomersCompletedGlobal") +
                         m_statistics.get("SumCustomersCompleted"));
 
-        reset();
+        m_statistics.replace("WorkerUtilizationGlobal",
+                m_statistics.get("WorkerUtilizationGlobal") +
+                        (m_statistics.get("AdminWorkersUtilization") /
+                                m_statistics.get("ActualSimulationTime")));
+        m_statistics.replace("DoctorUtilizationGlobal",
+                m_statistics.get("DoctorUtilizationGlobal") +
+                        (m_statistics.get("DoctorsUtilization") /
+                                m_statistics.get("ActualSimulationTime")));
+        m_statistics.replace("NurseUtilizationGlobal",
+                m_statistics.get("NurseUtilizationGlobal") +
+                        (m_statistics.get("NursesUtilization") /
+                                m_statistics.get("ActualSimulationTime")));
 
         m_statistics.replace("CompleteReplications",
                 m_statistics.get("CompleteReplications").doubleValue() + 1);
 
+        reset();
         this.m_eventCalendar.clear();
     }
 
@@ -296,16 +345,17 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
     public double getNextArrivalTime() {
         double time = m_actSimTime;
 
-        /*while(!customerArrived()) {
+        while(!customerArrived()) {
             time += 60;
-        }*/
-        return time + m_arrivalgen.nextDouble();
+        }
+        return time + 60;
     }
 //----------------------------------------------------------------------------------------
 //  ************************** Registration sequence *************************************
     public void addCustToRegQueue(Customer customer) {
         this.m_registrationQueue.add(customer);
         registerNextCustomer();
+        m_statistics.replace("RegQueueSize", (double)m_registrationQueue.size());
     }
 
     public void registerNextCustomer() {
@@ -357,11 +407,27 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         addCustToMedQueue(customer);
     }
 
+    public void updateAvailableWorkers() {
+        double totalUtilizationTime = 0.0;
+        int availableWorkers = 0;
+        for (AdminWorker worker : m_adminWorkers) {
+            if(worker.isAvailable()) {
+                availableWorkers++;
+            }
+            totalUtilizationTime += worker.getTotalTimeOccupied();
+        }
+
+        m_statistics.replace("AdminWorkersUtilization",  totalUtilizationTime / m_adminWorkers.size());
+        m_statistics.replace("AdminWorkersAvailability",  (double)availableWorkers);
+        m_statistics.replace("RegQueueSize", (double)m_registrationQueue.size());
+    }
+
 //----------------------------------------------------------------------------------------
 //  ************************** Medical examination sequence *************************************
     public void addCustToMedQueue(Customer customer) {
         this.m_medicalQueue.add(customer);
         medicalNextCustomer();
+        m_statistics.replace("MedQueueSize", (double)m_medicalQueue.size());
     }
 
     public void medicalNextCustomer() {
@@ -413,11 +479,27 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         addCustToVaccQueue(customer);
     }
 
+    public void updateAvailableDoctors() {
+        double totalUtilizationTime = 0.0;
+        int availableDoctors = 0;
+        for (Doctor doctor : m_doctors) {
+            if(doctor.isAvailable()) {
+                availableDoctors++;
+            }
+            totalUtilizationTime += doctor.getTotalTimeOccupied();
+        }
+
+        m_statistics.replace("DoctorsUtilization",  totalUtilizationTime / m_doctors.size());
+        m_statistics.replace("DoctorsAvailability",  (double)availableDoctors);
+        m_statistics.replace("MedQueueSize", (double)m_medicalQueue.size());
+    }
+
 //----------------------------------------------------------------------------------------
 //  ************************** Vaccination sequence *************************************
     public void addCustToVaccQueue(Customer customer) {
         this.m_vaccinationQueue.add(customer);
         vaccinateNextCustomer();
+        m_statistics.replace("VaccQueueSize", (double)m_vaccinationQueue.size());
     }
 
     public void vaccinateNextCustomer() {
@@ -473,6 +555,22 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
                 m_actSimTime + customer.getTimeWaiting(), this, customer
         ));
         m_waitingRoom.add(customer);
+        m_statistics.replace("WaitingRoomSize", (double)m_waitingRoom.size());
+    }
+
+    public void updateAvailableNurses() {
+        double totalUtilizationTime = 0.0;
+        int availableNurses = 0;
+        for (Nurse nurse : m_nurses) {
+            if(nurse.isAvailable()) {
+                availableNurses++;
+            }
+            totalUtilizationTime += nurse.getTotalTimeOccupied();
+        }
+
+        m_statistics.replace("NursesUtilization",  totalUtilizationTime / m_nurses.size());
+        m_statistics.replace("NursesAvailability",  (double)availableNurses);
+        m_statistics.replace("VaccQueueSize", (double)m_vaccinationQueue.size());
     }
 //----------------------------------------------------------------------------------------
 //  ************************** End of story for the customer *************************************
@@ -492,14 +590,12 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         if(toBeRemoved != null) {
             m_waitingRoom.remove(toBeRemoved);
         }
+        m_statistics.replace("WaitingRoomSize", (double)m_waitingRoom.size());
     }
     // --------------------------------------------------------------------
-    public HashMap<String, Double> getStatics() {
-        return m_statistics;
-    }
-
     @Override
     public void notifyObservers() {
+        m_statistics.replace("ActualSimulationTime", m_actSimTime);
         for (IObserver observer : m_observers) {
             observer.update(m_statistics);
         }

@@ -13,11 +13,12 @@ public class RegistrationEndEvent extends CustomerEmployeeEvent {
 
     @Override
     public void execute() {
-        m_employee.setAvailable();
+        m_employee.setAvailable(m_evSimCore.getActSimTime());
         m_customer.setTimeRegEnd(m_evSimCore.getActSimTime());
         VaccCenterSimCore simCore = (VaccCenterSimCore)m_evSimCore;
 
         simCore.endCustomerRegistration(m_customer);
         simCore.registerNextCustomer();
+        simCore.updateAvailableWorkers();
     }
 }

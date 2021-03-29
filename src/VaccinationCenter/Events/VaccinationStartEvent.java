@@ -12,12 +12,13 @@ public class VaccinationStartEvent extends CustomerEmployeeEvent {
 
     @Override
     public void execute() {
-        m_employee.setOccupied();
+        m_employee.setOccupied(m_evSimCore.getActSimTime());
         m_customer.setTimeVaccinationStart(m_evSimCore.getActSimTime());
         VaccCenterSimCore simCore = (VaccCenterSimCore)m_evSimCore;
 
         simCore.addEventToCalendar(new VaccinationEndEvent(
                 simCore.getActSimTime() + simCore.getVaccDuration(), simCore, m_customer, m_employee
         ));
+        simCore.updateAvailableNurses();
     }
 }

@@ -12,12 +12,13 @@ public class MedicalStartEvent extends CustomerEmployeeEvent {
 
     @Override
     public void execute() {
-        m_employee.setOccupied();
+        m_employee.setOccupied(m_evSimCore.getActSimTime());
         m_customer.setTimeMedicalStart(m_evSimCore.getActSimTime());
         VaccCenterSimCore simCore = (VaccCenterSimCore)m_evSimCore;
 
         simCore.addEventToCalendar(new MedicalEndEvent(
                 simCore.getActSimTime() + simCore.getMedDuration(), simCore, m_customer, m_employee
         ));
+        simCore.updateAvailableDoctors();
     }
 }

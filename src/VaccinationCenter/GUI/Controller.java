@@ -9,9 +9,13 @@ public class Controller implements IObserver {
     private VaccCenterSimCore m_simCore;
 
     public Controller() {
-        m_simCore =new VaccCenterSimCore(10000,2,5,6,3,9*60*60);
-        m_simCore.subscribeObserver(this);
 
+    }
+
+    public void init(int numberOfReplications, int seed,
+                     int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime) {
+        m_simCore =new VaccCenterSimCore(numberOfReplications,seed,numOfAdminWorkers,numOfDoctors,numOfNurses,repTime);
+        m_simCore.subscribeObserver(this);
     }
 
     public void subscribeToSimCore(IObserver observer) {
@@ -21,7 +25,7 @@ public class Controller implements IObserver {
     public void run() {
         new Thread(() -> {
             m_simCore.simulate();
-        }).run();
+        }).start();
     }
 
     @Override
@@ -29,7 +33,17 @@ public class Controller implements IObserver {
         //System.out.println("notification");
         if(o == null) return;
 
-        HashMap<String, Double> m_statistics = (HashMap<String, Double>)o;
-        System.out.println(m_statistics.get("CompleteReplications"));
+    }
+
+    public void pauseSim() {
+        m_simCore.pause();
+    }
+
+    public void resumeSim() {
+        m_simCore.resume();
+    }
+
+    public void stopSim() {
+        m_simCore.stop();
     }
 }
