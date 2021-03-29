@@ -13,9 +13,10 @@ public class Controller implements IObserver {
     }
 
     public void init(int numberOfReplications, int seed,
-                     int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime) {
+                     int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime, int speed) {
         m_simCore =new VaccCenterSimCore(numberOfReplications,seed,numOfAdminWorkers,numOfDoctors,numOfNurses,repTime);
         m_simCore.subscribeObserver(this);
+        m_simCore.setSpeed(speed);
     }
 
     public void subscribeToSimCore(IObserver observer) {
@@ -45,5 +46,9 @@ public class Controller implements IObserver {
 
     public void stopSim() {
         m_simCore.stop();
+    }
+
+    public void setTurbo(boolean turbo) {
+        m_simCore.setTurbo(turbo);
     }
 }

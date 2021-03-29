@@ -6,6 +6,7 @@ import VaccinationCenter.Employee.Doctor;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
 import java.util.HashMap;
 
 public class MainWindow extends JFrame implements IObserver {
@@ -13,6 +14,7 @@ public class MainWindow extends JFrame implements IObserver {
     private Controller app;
     private boolean pause;
     private boolean running;
+    private double systemTime;
 
     private JTextField seedTF;
     private JTextField replicationsTF;
@@ -44,6 +46,10 @@ public class MainWindow extends JFrame implements IObserver {
     private JLabel avgTimeInWRL;
     private JCheckBox turboCB;
     private JTextField repTimeTB;
+    private JLabel replicationL;
+    private JLabel systemTimeL;
+    private JSlider slider1;
+    private JLabel simSpeedL;
 
     public MainWindow(Controller app) {
         this.app = app;
@@ -59,7 +65,8 @@ public class MainWindow extends JFrame implements IObserver {
         pause = false;
         running = false;
         pauseBTN.setEnabled(false);
-
+        systemTime = 8*60*60.0;
+        simSpeedL.setText("Simulation speed: " + slider1.getValue());
         runBTN.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -72,7 +79,7 @@ public class MainWindow extends JFrame implements IObserver {
                     runSimulation(Integer.parseInt(replicationsTF.getText()),
                             Integer.parseInt(seedTF.getText()), Integer.parseInt(adminWorkTF.getText()),
                             Integer.parseInt(doctorsTF.getText()), Integer.parseInt(nursesTF.getText()),
-                            Integer.parseInt(repTimeTB.getText()));
+                            Integer.parseInt(repTimeTB.getText()), slider1.getValue());
                     pauseBTN.setEnabled(true);
                     runBTN.setText("Stop");
                     running = true;
@@ -93,15 +100,19 @@ public class MainWindow extends JFrame implements IObserver {
                 }
             }
         });
+        slider1.addComponentListener(new ComponentAdapter() {
+        });
     }
 
     private void runSimulation(int numberOfReplications, int seed,
-                               int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime) {
+                               int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime, int speed) {
 
         empRegL.setText("Admin workers: " + numOfAdminWorkers);
         empMedL.setText("Doctors: " + numOfDoctors);
         empVaccL.setText("Nursers: " + numOfNurses);
-        app.init(numberOfReplications, seed, numOfAdminWorkers, numOfDoctors, numOfNurses, repTime);
+
+        app.init(numberOfReplications, seed, numOfAdminWorkers, numOfDoctors, numOfNurses, repTime, speed);
+        app.setTurbo(turboCB.isSelected());
         app.subscribeToSimCore(this);
         app.run();
     }
@@ -109,20 +120,33 @@ public class MainWindow extends JFrame implements IObserver {
     @Override
     public void update(Object o) {
         if(o == null) return;
+
         //System.out.println("This is from Main Window: " + ((HashMap<String, Double >)o).get("ActualSimulationTime"));
         HashMap<String, Double> stats = (HashMap<String, Double >)o;
+        //systemTime += stats.get("ActualSimulationTime");
+        double tmpTime = systemTime + stats.get("ActualSimulationTime");
+
+        int minutes = (int)(tmpTime / 60);
+        int hours = (minutes / 60) % 24;
+        minutes = minutes % 60;
+
+        replicationL.setText(String.format("Replication: %.0f" , stats.get("CompleteReplications") + 1));
+        systemTimeL.setText(String.format("System time: %02d : %02d", hours, minutes));
+        //todo
+        double replications = stats.get("CompleteReplications");
+        if(replications == 0.0) { replications = 1.0; }
         if(turboCB.isSelected()) {
-            avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / stats.get("CompleteReplications")));
-            avgPplInRegQL.setText(String.format("Average ppl in reg Queue: %.4f", stats.get("RegisteredCustomersGlobal") / stats.get("CompleteReplications")));
-            utilRegL.setText(String.format("Utilization: %.4f ", stats.get("WorkerUtilizationGlobal") / stats.get("CompleteReplications") * 100) + "%");
+            avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / replications));
+            avgPplInRegQL.setText(String.format("Average ppl in reg Queue: %.4f", stats.get("RegisteredCustomersGlobal") / replications));
+            utilRegL.setText(String.format("Utilization: %.4f ", stats.get("WorkerUtilizationGlobal") / replications * 100) + "%");
 
-            avgTimeInMedQ.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeMedQueueGlobal") / stats.get("CompleteReplications")));
-            avgPplInMedQL.setText(String.format("Average ppl in Queue: %.4f", stats.get("ExaminedCustomersGlobal") / stats.get("CompleteReplications")));
-            utilDocL.setText(String.format("Utilization: %.4f ", stats.get("DoctorUtilizationGlobal") / stats.get("CompleteReplications") * 100) + "%");
+            avgTimeInMedQ.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeMedQueueGlobal") / replications));
+            avgPplInMedQL.setText(String.format("Average ppl in Queue: %.4f", stats.get("ExaminedCustomersGlobal") / replications));
+            utilDocL.setText(String.format("Utilization: %.4f ", stats.get("DoctorUtilizationGlobal") / replications * 100) + "%");
 
-            avgTimeInVaccQL.setText(String.format("Average time in Queue: %.4f" , stats.get("SumTimeVaccQueueGlobal") / stats.get("CompleteReplications")));
-            avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f ", stats.get("VaccinatedCustomersGlobal") / stats.get("CompleteReplications")));
-            utilNurL.setText(String.format("Utilization: %.4f ", stats.get("NurseUtilizationGlobal") / stats.get("CompleteReplications") * 100) + "%");
+            avgTimeInVaccQL.setText(String.format("Average time in Queue: %.4f" , stats.get("SumTimeVaccQueueGlobal") / replications));
+            avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f ", stats.get("VaccinatedCustomersGlobal") / replications));
+            utilNurL.setText(String.format("Utilization: %.4f ", stats.get("NurseUtilizationGlobal") / replications * 100) + "%");
 
         } else {
             utilRegL.setText(String.format("Utilization: %.4f ", (stats.get("AdminWorkersUtilization") / stats.get("ActualSimulationTime") * 100)) + "%");
@@ -144,8 +168,6 @@ public class MainWindow extends JFrame implements IObserver {
             avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f", stats.get("SumTimeVaccQueue") / stats.get("ActualSimulationTime")));
 
             pplInWRL.setText("Ppl in waiting room: " + stats.get("WaitingRoomSize"));
-        /*avgTimeInVaccQL.setText("Average time in Queue: " + stats.get("SumTimeVaccQueue") / stats.get("VaccinatedCustomers"));
-        avgPplInVaccQL.setText("Average ppl in reg Queue: " + stats.get("SumTimeVaccQueue")  / stats.get("ActualSimulationTime"));*/
         }
     }
 }

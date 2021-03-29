@@ -9,10 +9,12 @@ import java.util.List;
 public abstract class SimulationCore implements ISubject {
     protected int m_numOfReplications;
     protected List<IObserver> m_observers;
+    protected boolean m_stoped;
 
     public SimulationCore(int numberOfReplications) {
         this.m_numOfReplications = numberOfReplications;
         m_observers = new LinkedList<>();
+        m_stoped = false;
     }
 
     protected abstract void onSimulationStart();
@@ -25,6 +27,9 @@ public abstract class SimulationCore implements ISubject {
         for (int i = 0; i < m_numOfReplications; i++) {
             onReplicationStart();
             onReplicationEnd();
+            if(m_stoped) {
+                break;
+            }
         }
         onSimulationEnd();
     }
@@ -44,5 +49,9 @@ public abstract class SimulationCore implements ISubject {
         for (IObserver observer : m_observers) {
             observer.update(null);
         }
+    }
+
+    public void stop() {
+        m_stoped = true;
     }
 }
