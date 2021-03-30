@@ -7,7 +7,9 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class MainWindow extends JFrame implements IObserver {
     private JPanel rootPanel;
@@ -15,6 +17,7 @@ public class MainWindow extends JFrame implements IObserver {
     private boolean pause;
     private boolean running;
     private double systemTime;
+    //DefaultListModel<String> model;
 
     private JTextField seedTF;
     private JTextField replicationsTF;
@@ -50,6 +53,11 @@ public class MainWindow extends JFrame implements IObserver {
     private JLabel systemTimeL;
     private JSlider slider1;
     private JLabel simSpeedL;
+    private JTabbedPane QueueStats;
+    private JList<String> list1;
+    private JPanel employeesTab;
+    private JPanel customersTab;
+    private JList list2;
 
     public MainWindow(Controller app) {
         this.app = app;
@@ -60,13 +68,30 @@ public class MainWindow extends JFrame implements IObserver {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }
-        setBounds(300,100, 1100, 750);
+        setBounds(300,100, 1100, 900);
         this.setVisible(true);
         pause = false;
         running = false;
         pauseBTN.setEnabled(false);
         systemTime = 8*60*60.0;
         simSpeedL.setText("Simulation speed: " + slider1.getValue());
+        /*model = new DefaultListModel<>();
+
+        model.addElement("test");
+        list1 = new JList<>(model);
+
+        list1.setModel(model);*/
+        //list1.setCellRenderer(new DefaultListCellRenderer());
+        //list1.setVisible(true);
+
+        /*JScrollPane scrollPane = new JScrollPane();
+        scrollPane.setViewportView(list2);
+        list2.setLayoutOrientation(JList.VERTICAL);
+*/
+        //JScrollPane s = new JScrollPane(list2);
+        //s.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        //s.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
         runBTN.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -120,9 +145,23 @@ public class MainWindow extends JFrame implements IObserver {
     @Override
     public void update(Object o) {
         if(o == null) return;
+        if(o instanceof HashMap) {
+            //System.out.println("map");
+            refreshQueues((HashMap<String, Double>)o);
+        }
+        if(o instanceof LinkedList) {
+            refreshEmployees((LinkedList<String>)o);
+        }
+        if(o instanceof ArrayList) {
+            refreshCustomers((ArrayList<String>)o);
+        }
 
         //System.out.println("This is from Main Window: " + ((HashMap<String, Double >)o).get("ActualSimulationTime"));
-        HashMap<String, Double> stats = (HashMap<String, Double >)o;
+
+    }
+
+    public void refreshQueues(HashMap<String, Double> stats) {
+        //HashMap<String, Double> stats = (HashMap<String, Double >)o;
         //systemTime += stats.get("ActualSimulationTime");
         double tmpTime = systemTime + stats.get("ActualSimulationTime");
 
@@ -170,4 +209,28 @@ public class MainWindow extends JFrame implements IObserver {
             pplInWRL.setText("Ppl in waiting room: " + stats.get("WaitingRoomSize"));
         }
     }
-}
+
+    public void refreshEmployees(LinkedList<String> employees) {
+        DefaultListModel<String> model = new DefaultListModel<>();
+        //System.out.println("List");
+        for (String string : employees) {
+            model.addElement(string);
+        }
+        //model.addElement("test");
+        list1.setModel(model);
+        list1.setCellRenderer(new DefaultListCellRenderer());
+        list1.setVisible(true);
+
+    }
+
+    public void refreshCustomers(ArrayList<String> customers) {
+        DefaultListModel<String> model = new DefaultListModel<>();
+        //System.out.println("List");
+        for (String string : customers) {
+            model.addElement(string);
+        }
+        //model.addElement("test");
+        list2.setModel(model);
+
+    }
+ }

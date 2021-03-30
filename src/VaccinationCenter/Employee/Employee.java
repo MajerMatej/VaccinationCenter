@@ -34,4 +34,10 @@ public abstract class Employee {
         m_totalTimeOccupied = 0.0;
         m_lastTimeAvailable = 0.0;
     }
+
+    public String toStringWithTime(double time) {
+        String str;
+        str = String.format("Util: %.2f%% available: %b", (m_totalTimeOccupied / time) * 100, m_availability);
+        return str;
+    }
 }

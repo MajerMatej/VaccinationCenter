@@ -36,6 +36,8 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
     private LinkedList<AdminWorker> m_adminWorkers;
     private LinkedList<Doctor> m_doctors;
     private LinkedList<Nurse> m_nurses;
+
+    private ArrayList<Customer> m_customers;
     // Stat variables -----------------------------------------
     private HashMap<String, Double> m_statistics;
 
@@ -180,6 +182,8 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
             Nurse nurse = new Nurse();
             m_nurses.add(nurse);
         }
+
+        m_customers = new ArrayList<>();
     }
 
     private void reset() {
@@ -354,6 +358,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
 //  ************************** Registration sequence *************************************
     public void addCustToRegQueue(Customer customer) {
         this.m_registrationQueue.add(customer);
+        this.m_customers.add(customer);
         registerNextCustomer();
         m_statistics.replace("RegQueueSize", (double)m_registrationQueue.size());
     }
@@ -375,7 +380,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         /*-1 for index from0, -1 no need for generator for 1 worker */
         double randValue = m_regEmpDecGenerators.get(availableWorkers.size() - 2 ).nextDouble();
         for(int i = 0; i < availableWorkers.size(); i++) {
-            if(randValue < (i + 1) / availableWorkers.size()) {
+            if(randValue < ((i + 1) / (double)availableWorkers.size())) {
                 this.addEventToCalendar(new RegistrationStartEvent(m_actSimTime, this, m_registrationQueue.poll(), availableWorkers.remove(i)));
                 return;
             }
@@ -447,7 +452,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         //-1 for index from0, -1 no need for generator for 1 worker
         double randValue = m_medEmpDecGenerators.get(availableDoctors.size() - 2 ).nextDouble();
         for(int i = 0; i < availableDoctors.size(); i++) {
-            if(randValue < (i + 1) / availableDoctors.size()) {
+            if(randValue < (i + 1) / (double)availableDoctors.size()) {
                 this.addEventToCalendar(new MedicalStartEvent(m_actSimTime, this, m_medicalQueue.poll(), availableDoctors.remove(i)));
                 return;
             }
@@ -519,7 +524,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         //-1 for index from0, -1 no need for generator for 1 worker
         double randValue = m_vaccEmpDecGenerators.get(availableNurses.size() - 2 ).nextDouble();
         for(int i = 0; i < availableNurses.size(); i++) {
-            if(randValue < (i + 1) / availableNurses.size()) {
+            if(randValue < (i + 1) / (double)availableNurses.size()) {
                 this.addEventToCalendar(new VaccinationStartEvent(m_actSimTime, this, m_vaccinationQueue.poll(), availableNurses.remove(i)));
                 return;
             }
@@ -581,15 +586,26 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
                 (m_actSimTime - customer.getTimeOfArrival()));
         m_statistics.replace("SumCustomersCompleted",
                 m_statistics.get("SumCustomersCompleted") + 1);
-        Customer toBeRemoved = null;
+        Customer toBeRemovedWR = null;
         for (Customer cust : m_waitingRoom) {
+            if(customer == cust) {
+                toBeRemovedWR = cust;
+            }
+        }
+        if(toBeRemovedWR != null) {
+            m_waitingRoom.remove(toBeRemovedWR);
+        }
+
+        Customer toBeRemoved = null;
+        for (Customer cust : m_customers) {
             if(customer == cust) {
                 toBeRemoved = cust;
             }
         }
         if(toBeRemoved != null) {
-            m_waitingRoom.remove(toBeRemoved);
+            m_customers.remove(toBeRemoved);
         }
+
         m_statistics.replace("WaitingRoomSize", (double)m_waitingRoom.size());
     }
     // --------------------------------------------------------------------
@@ -598,6 +614,32 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         m_statistics.replace("ActualSimulationTime", m_actSimTime);
         for (IObserver observer : m_observers) {
             observer.update(m_statistics);
+            observer.update(employeesToString());
+            observer.update(customersToString());
         }
+    }
+
+    private LinkedList<String> employeesToString() {
+        LinkedList<String> result = new LinkedList<>();
+        for (AdminWorker worker : m_adminWorkers) {
+            result.add(worker.toStringWithTime(m_actSimTime));
+        }
+
+        for(Doctor doctor : m_doctors) {
+            result.add(doctor.toStringWithTime(m_actSimTime));
+        }
+
+        for(Nurse nurse : m_nurses) {
+            result.add(nurse.toStringWithTime(m_actSimTime));
+        }
+        return result;
+    }
+
+    private ArrayList<String> customersToString() {
+        ArrayList<String> result = new ArrayList<>();
+        for (Customer customer : m_customers) {
+            result.add(customer.toString());
+        }
+        return result;
     }
 }

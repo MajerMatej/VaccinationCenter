@@ -10,6 +10,7 @@ public class Customer {
     private double m_timeVaccinationStart;
     private double m_timeVaccinationEnd;
     private double m_timeWaiting;
+    private CustomerState m_state;
 
     public Customer(int m_id) {
         this.m_id = m_id;
@@ -28,6 +29,7 @@ public class Customer {
     }
 
     public void setTimeOfArrival(double timeOfArrival) {
+        m_state = CustomerState.REGISTRATION_QUEUE;
         this.m_timeOfArrival = timeOfArrival;
     }
 
@@ -36,6 +38,7 @@ public class Customer {
     }
 
     public void setTimeRegStart(double timeRegStart) {
+        m_state = CustomerState.REGISTRATION;
         this.m_timeRegStart = timeRegStart;
     }
 
@@ -44,6 +47,7 @@ public class Customer {
     }
 
     public void setTimeRegEnd(double timeRegEnd) {
+        m_state = CustomerState.MEDICAL_QUEUE;
         this.m_timeRegEnd = timeRegEnd;
     }
 
@@ -52,6 +56,7 @@ public class Customer {
     }
 
     public void setTimeMedicalStart(double timeMedicalStart) {
+        m_state = CustomerState.MEDICAL;
         this.m_timeMedicalStart = timeMedicalStart;
     }
 
@@ -60,6 +65,7 @@ public class Customer {
     }
 
     public void setTimeMedicalEnd(double timeMedicalEnd) {
+        m_state = CustomerState.VACCINATION_QUEUE;
         this.m_timeMedicalEnd = timeMedicalEnd;
     }
 
@@ -68,6 +74,7 @@ public class Customer {
     }
 
     public void setTimeVaccinationStart(double timeVaccinationStart) {
+        m_state = CustomerState.VACCINATION;
         this.m_timeVaccinationStart = timeVaccinationStart;
     }
 
@@ -76,6 +83,7 @@ public class Customer {
     }
 
     public void setTimeVaccinationEnd(double timeVaccinationEnd) {
+        m_state = CustomerState.WAITING_ROOM;
         this.m_timeVaccinationEnd = timeVaccinationEnd;
     }
 
@@ -87,5 +95,37 @@ public class Customer {
         this.m_timeWaiting = timeWaiting;
     }
 
+    @Override
+    public String toString() {
+        String strState = "Lost";
+        switch (m_state) {
+            case REGISTRATION_QUEUE:
+                strState = "Registration Queue";
+                break;
+            case REGISTRATION:
+                strState = "Registration";
+                break;
+            case MEDICAL_QUEUE:
+                strState = "Medical Queue";
+                break;
+            case MEDICAL:
+                strState = "Medical examination";
+                break;
+            case VACCINATION_QUEUE:
+                strState = "Vaccination Queue";
+                break;
+            case VACCINATION:
+                strState = "Vaccination";
+                break;
+            case WAITING_ROOM:
+                strState = "Waiting room";
+                break;
+        }
 
+        return "Customer{" +
+                String.format("ID: %d , Location: %s, TimeOfArrival %.2f, TimeRegStart: %.2f, TimeRegEnd: %.2f, " +
+                        "TimeMedicalStart: %.2f, TimeMedicalEnd: %.2f, TimeVaccinationStart: %.2f, TimeVaccinationEnd: %.2f, " +
+                        "TimeWaiting: %.2f}", m_id, strState, m_timeOfArrival, m_timeRegStart, m_timeRegEnd,
+                        m_timeMedicalStart, m_timeMedicalEnd, m_timeVaccinationStart, m_timeVaccinationEnd,  m_timeWaiting);
+    }
 }
