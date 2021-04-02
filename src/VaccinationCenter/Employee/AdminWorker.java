@@ -6,7 +6,7 @@ public class AdminWorker extends Employee{
 
     @Override
     public String toStringWithTime(double time) {
-        String str = "Admin worker " + super.toStringWithTime(time);
+        String str = "AdminWorker " + super.toStringWithTime(time);
         return str;
     }
 }

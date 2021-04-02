@@ -14,6 +14,6 @@ public class ExpRandomGenerator extends CustomRandomGenerator {
 
     @Override
     public double nextDouble() {
-        return ((- Math.log(super.nextDouble())) * m_mean);
+        return ((- Math.log((1 - super.nextDouble()))) * m_mean);
     }
 }

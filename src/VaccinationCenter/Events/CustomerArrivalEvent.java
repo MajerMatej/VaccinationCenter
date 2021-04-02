@@ -15,10 +15,12 @@ public class CustomerArrivalEvent extends Event {
         VaccCenterSimCore simCore = ((VaccCenterSimCore) m_evSimCore);
         Customer customer = new Customer(simCore.getNextCustomerID());
         customer.setTimeOfArrival(simCore.getActSimTime());
-        simCore.addEventToCalendar(new CustomerArrivalEvent(
-                simCore.getNextArrivalTime(), simCore
-        ));
+        if(!simCore.isSimulationCooling()) {
+            simCore.addEventToCalendar(new CustomerArrivalEvent(
+                    simCore.getNextArrivalTime(), simCore
+            ));
 
-        simCore.addCustToRegQueue(customer);
+            simCore.addCustToRegQueue(customer);
+        }
     }
 }

@@ -1,6 +1,5 @@
 package VaccinationCenter.Events;
 
-import Simulation.CustomerEmployeeEvent;
 import VaccinationCenter.Customer;
 import VaccinationCenter.Employee.Employee;
 import VaccinationCenter.VaccCenterSimCore;

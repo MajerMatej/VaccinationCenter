@@ -28,7 +28,7 @@ public abstract class SimulationCore implements ISubject {
             onReplicationStart();
             onReplicationEnd();
             if(m_stoped) {
-                break;
+                continue;
             }
         }
         onSimulationEnd();

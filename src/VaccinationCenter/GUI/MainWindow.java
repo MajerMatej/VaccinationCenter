@@ -4,6 +4,7 @@ import Simulation.Interfaces.IObserver;
 import VaccinationCenter.Employee.Doctor;
 
 import javax.swing.*;
+import javax.swing.table.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -54,10 +55,21 @@ public class MainWindow extends JFrame implements IObserver {
     private JSlider slider1;
     private JLabel simSpeedL;
     private JTabbedPane QueueStats;
-    private JList<String> list1;
-    private JPanel employeesTab;
     private JPanel customersTab;
     private JList list2;
+    private JTable empTable;
+    private JLabel customersLabel;
+    private JTextField customersTF;
+    private JTextField exp2CustTF;
+    private JTextField exp2RepTF;
+    private JTable exp2Table;
+    private JButton exp2BTN;
+    private JPanel employeeTab;
+
+    private int m_workers;
+    private int m_doctors;
+    private int m_nurses;
+    private DefaultTableModel tableModel;
 
     public MainWindow(Controller app) {
         this.app = app;
@@ -75,26 +87,25 @@ public class MainWindow extends JFrame implements IObserver {
         pauseBTN.setEnabled(false);
         systemTime = 8*60*60.0;
         simSpeedL.setText("Simulation speed: " + slider1.getValue());
-        /*model = new DefaultListModel<>();
 
-        model.addElement("test");
-        list1 = new JList<>(model);
+        String[] columnNames = {"Employee", "Count", "Utilization"};
+        tableModel = new DefaultTableModel(columnNames, m_workers + m_nurses + m_doctors);
 
-        list1.setModel(model);*/
-        //list1.setCellRenderer(new DefaultListCellRenderer());
-        //list1.setVisible(true);
+        //JTableHeader header = new JTableHeader(columnNames, 3);
+        exp2Table.setModel(tableModel);
 
-        /*JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setViewportView(list2);
-        list2.setLayoutOrientation(JList.VERTICAL);
-*/
-        //JScrollPane s = new JScrollPane(list2);
-        //s.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-        //s.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        m_workers = 1;
+        m_doctors = 1;
+        m_nurses = 1;
 
         runBTN.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                m_workers = Integer.parseInt(adminWorkTF.getText());
+                m_doctors = Integer.parseInt(doctorsTF.getText());
+                m_nurses = Integer.parseInt(nursesTF.getText());
+                String[] columnNames = {"Employee", "Count", "Utilization"};
+                tableModel = new DefaultTableModel(columnNames, m_workers + m_nurses + m_doctors);
                 if(running) {
                     app.stopSim();
                     runBTN.setText("Run");
@@ -104,7 +115,7 @@ public class MainWindow extends JFrame implements IObserver {
                     runSimulation(Integer.parseInt(replicationsTF.getText()),
                             Integer.parseInt(seedTF.getText()), Integer.parseInt(adminWorkTF.getText()),
                             Integer.parseInt(doctorsTF.getText()), Integer.parseInt(nursesTF.getText()),
-                            Integer.parseInt(repTimeTB.getText()), slider1.getValue());
+                            Integer.parseInt(repTimeTB.getText()), slider1.getValue() + 1, Integer.parseInt(customersTF.getText()));
                     pauseBTN.setEnabled(true);
                     runBTN.setText("Stop");
                     running = true;
@@ -130,13 +141,14 @@ public class MainWindow extends JFrame implements IObserver {
     }
 
     private void runSimulation(int numberOfReplications, int seed,
-                               int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime, int speed) {
+                               int numOfAdminWorkers, int numOfDoctors, int numOfNurses, double repTime,
+                               int speed, int maxCustomers) {
 
         empRegL.setText("Admin workers: " + numOfAdminWorkers);
         empMedL.setText("Doctors: " + numOfDoctors);
         empVaccL.setText("Nursers: " + numOfNurses);
 
-        app.init(numberOfReplications, seed, numOfAdminWorkers, numOfDoctors, numOfNurses, repTime, speed);
+        app.init(numberOfReplications, seed, numOfAdminWorkers, numOfDoctors, numOfNurses, repTime, speed, maxCustomers);
         app.setTurbo(turboCB.isSelected());
         app.subscribeToSimCore(this);
         app.run();
@@ -145,22 +157,26 @@ public class MainWindow extends JFrame implements IObserver {
     @Override
     public void update(Object o) {
         if(o == null) return;
-        if(o instanceof HashMap) {
+
+        if(o instanceof Double) {
+            replicationL.setText(String.format("Replication: %.0f" , (Double)o));
+        }
+        /*if(o instanceof HashMap) {
             //System.out.println("map");
             refreshQueues((HashMap<String, Double>)o);
         }
-        if(o instanceof LinkedList) {
+        if(o instanceof LinkedList && !turboCB.isSelected()) {
             refreshEmployees((LinkedList<String>)o);
         }
-        if(o instanceof ArrayList) {
+        if(o instanceof ArrayList && !turboCB.isSelected()){
             refreshCustomers((ArrayList<String>)o);
         }
 
-        //System.out.println("This is from Main Window: " + ((HashMap<String, Double >)o).get("ActualSimulationTime"));
+*/        //System.out.println("This is from Main Window: " + ((HashMap<String, Double >)o).get("ActualSimulationTime"));
 
     }
 
-    public void refreshQueues(HashMap<String, Double> stats) {
+    private void refreshQueues(HashMap<String, Double> stats) {
         //HashMap<String, Double> stats = (HashMap<String, Double >)o;
         //systemTime += stats.get("ActualSimulationTime");
         double tmpTime = systemTime + stats.get("ActualSimulationTime");
@@ -170,12 +186,12 @@ public class MainWindow extends JFrame implements IObserver {
         minutes = minutes % 60;
 
         replicationL.setText(String.format("Replication: %.0f" , stats.get("CompleteReplications") + 1));
-        systemTimeL.setText(String.format("System time: %02d : %02d", hours, minutes));
+
         //todo
         double replications = stats.get("CompleteReplications");
         if(replications == 0.0) { replications = 1.0; }
         if(turboCB.isSelected()) {
-            avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / replications));
+            /*avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / replications));
             avgPplInRegQL.setText(String.format("Average ppl in reg Queue: %.4f", stats.get("RegisteredCustomersGlobal") / replications));
             utilRegL.setText(String.format("Utilization: %.4f ", stats.get("WorkerUtilizationGlobal") / replications * 100) + "%");
 
@@ -186,8 +202,10 @@ public class MainWindow extends JFrame implements IObserver {
             avgTimeInVaccQL.setText(String.format("Average time in Queue: %.4f" , stats.get("SumTimeVaccQueueGlobal") / replications));
             avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f ", stats.get("VaccinatedCustomersGlobal") / replications));
             utilNurL.setText(String.format("Utilization: %.4f ", stats.get("NurseUtilizationGlobal") / replications * 100) + "%");
-
+            avgPplInWRL.setText(String.format("Avg waiting room size: %.4f ", stats.get("WaitingRoomSizeGlobal") / replications ));
+            */
         } else {
+            systemTimeL.setText(String.format("System time: %02d : %02d", hours, minutes));
             utilRegL.setText(String.format("Utilization: %.4f ", (stats.get("AdminWorkersUtilization") / stats.get("ActualSimulationTime") * 100)) + "%");
             availWorkL.setText("Available: " + stats.get("AdminWorkersAvailability"));
             pplInRegQL.setText("Ppl in Queue: " + stats.get("RegQueueSize"));
@@ -207,23 +225,34 @@ public class MainWindow extends JFrame implements IObserver {
             avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f", stats.get("SumTimeVaccQueue") / stats.get("ActualSimulationTime")));
 
             pplInWRL.setText("Ppl in waiting room: " + stats.get("WaitingRoomSize"));
+            avgPplInWRL.setText(String.format("Avg waiting room size: %.4f ", stats.get("WaitingRoomSizeGlobal") / replications ));
         }
     }
 
-    public void refreshEmployees(LinkedList<String> employees) {
-        DefaultListModel<String> model = new DefaultListModel<>();
+    private void refreshEmployees(LinkedList<String> employees) {
+
+        //DefaultListModel<String> model = new DefaultListModel<>();
         //System.out.println("List");
-        for (String string : employees) {
-            model.addElement(string);
+        int i = 0;
+        int j = 0;
+        try {
+            for (String string : employees) {
+                for (Object obj : parseEmployeeToRow(string)) {
+                    tableModel.setValueAt(obj, i, j);
+                    j++;
+                }
+                j = 0;
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println(e.toString());
         }
         //model.addElement("test");
-        list1.setModel(model);
-        list1.setCellRenderer(new DefaultListCellRenderer());
-        list1.setVisible(true);
+        empTable.setModel(tableModel);
 
     }
 
-    public void refreshCustomers(ArrayList<String> customers) {
+    private void refreshCustomers(ArrayList<String> customers) {
         DefaultListModel<String> model = new DefaultListModel<>();
         //System.out.println("List");
         for (String string : customers) {
@@ -232,5 +261,12 @@ public class MainWindow extends JFrame implements IObserver {
         //model.addElement("test");
         list2.setModel(model);
 
+    }
+
+    private Object[] parseEmployeeToRow(String string) {
+        //String phrase = "the music made   it   hard      to        concentrate";
+        String delims = "[ ]+";
+        String[] tokens = string.split(delims);
+        return new Object[]{tokens[0], tokens[4], tokens[2]};
     }
  }

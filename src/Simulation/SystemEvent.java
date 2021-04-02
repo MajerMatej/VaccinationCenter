@@ -14,6 +14,8 @@ public class SystemEvent extends Event{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        m_evSimCore.addEventToCalendar(new SystemEvent(m_eventTime + 60, m_evSimCore, m_speed));
+        if(!m_evSimCore.isSimulationCooling()) {
+            m_evSimCore.addEventToCalendar(new SystemEvent(m_eventTime + 60, m_evSimCore, m_speed));
+        }
     }
 }

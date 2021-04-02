@@ -8,6 +8,7 @@ public abstract class EventSimulationCore extends SimulationCore{
     private boolean m_paused;
     private int m_speed;
     private boolean m_turboMode;
+    private boolean m_cooling;
 
     public EventSimulationCore(int numberOfReplications) {
         super(numberOfReplications);
@@ -16,13 +17,15 @@ public abstract class EventSimulationCore extends SimulationCore{
         m_paused = false;
         m_turboMode = false;
         m_speed = 1;
+        m_cooling = false;
     }
 
     protected void doReplication(double endTime) {
+        m_cooling = false;
         if(!m_turboMode) {
             addEventToCalendar(new SystemEvent(0.0, this, m_speed));
         }
-        while(m_actSimTime < endTime && !m_eventCalendar.isEmpty() && !m_stoped) {
+        while(/*m_actSimTime < endTime &&*/ !m_eventCalendar.isEmpty() && !m_stoped) {
             if(m_paused) {
                 while(m_paused) {
                     try {
@@ -38,11 +41,14 @@ public abstract class EventSimulationCore extends SimulationCore{
             if(!m_turboMode && event instanceof SystemEvent) {
                 notifyObservers();
             }
+            if(m_actSimTime >= endTime) {
+                m_cooling = true;
+            }
         }
 
-        if(m_turboMode) {
+        /*if(m_turboMode) {
             notifyObservers();
-        }
+        }*/
     }
     public void addEventToCalendar(Event event) {
         m_eventCalendar.add(event);
@@ -66,5 +72,9 @@ public abstract class EventSimulationCore extends SimulationCore{
 
     public void setSpeed(int speed) {
         m_speed = speed;
+    }
+
+    public boolean isSimulationCooling() {
+        return m_cooling;
     }
 }
