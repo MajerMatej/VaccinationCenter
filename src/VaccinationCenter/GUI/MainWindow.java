@@ -1,10 +1,19 @@
 package VaccinationCenter.GUI;
 
 import Simulation.Interfaces.IObserver;
-import VaccinationCenter.Employee.Doctor;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import javax.swing.table.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -65,11 +74,27 @@ public class MainWindow extends JFrame implements IObserver {
     private JTable exp2Table;
     private JButton exp2BTN;
     private JPanel employeeTab;
+    private JPanel chartPane;
+    private JTextField maxDocTF;
+    private JTextField repExp3TF;
+    private JTextField minDocTF;
+    private JButton exp3BTN;
+    private JTable exp3Table;
+    private JScrollPane exp3;
+    private JButton refreshButton;
+    private JLabel ciL;
+    private JPanel chartTab;
 
     private int m_workers;
     private int m_doctors;
     private int m_nurses;
     private DefaultTableModel tableModel;
+    private  XYSeries xyseries;
+    private XYSeriesCollection datasetXY;
+    JFreeChart chart;
+    DefaultTableModel tableModelEXP3;
+    DefaultTableModel tableModelEXP2;
+
 
     public MainWindow(Controller app) {
         this.app = app;
@@ -80,23 +105,47 @@ public class MainWindow extends JFrame implements IObserver {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }
-        setBounds(300,100, 1100, 900);
+        setBounds(300,100, 1250, 900);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.setVisible(true);
         pause = false;
         running = false;
         pauseBTN.setEnabled(false);
         systemTime = 8*60*60.0;
-        simSpeedL.setText("Simulation speed: " + slider1.getValue());
 
         String[] columnNames = {"Employee", "Count", "Utilization"};
         tableModel = new DefaultTableModel(columnNames, m_workers + m_nurses + m_doctors);
+        tableModelEXP2 = new DefaultTableModel(columnNames, 3);
 
         //JTableHeader header = new JTableHeader(columnNames, 3);
         exp2Table.setModel(tableModel);
+        //exp2Table.setAutoCreateRowSorter(true);
 
         m_workers = 1;
         m_doctors = 1;
         m_nurses = 1;
+
+        String[] columnNamesEXP3 = {"Doctors", "Average Q length"};
+        tableModelEXP3 = new DefaultTableModel(columnNamesEXP3, 0);
+        //tableModelEXP2 = new DefaultTableModel(columnNamesEXP2, 3);
+
+
+        //JTableHeader header = new JTableHeader(columnNames, 3);
+        exp3Table.setModel(tableModelEXP3);
+
+        xyseries = new XYSeries("Average examination queue length");
+        datasetXY = new XYSeriesCollection(xyseries);
+        chart = ChartFactory.createXYLineChart(
+                "Average medical examination Queue length",
+                "Doctors count",
+                "Average queue len",
+                datasetXY,
+                PlotOrientation.VERTICAL,
+                true, true, false
+        );
+        ChartPanel chartPanel = new ChartPanel(chart, false);
+        chartPanel.setPreferredSize(new Dimension(450, 300));
+        chartPane.add(chartPanel);
 
         runBTN.addActionListener(new ActionListener() {
             @Override
@@ -138,6 +187,56 @@ public class MainWindow extends JFrame implements IObserver {
         });
         slider1.addComponentListener(new ComponentAdapter() {
         });
+        exp3BTN.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                runExperiment3();
+            }
+        });
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for(int i = tableModelEXP3.getRowCount(); i > 0 ; i--) {
+                    tableModelEXP3.removeRow(i - 1);
+                }
+
+            }
+        });
+        exp2BTN.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                runExperiment2();
+            }
+        });
+    }
+
+    private void runExperiment3() {
+        app.subscribeToSimCore(this);
+        app.experiment3(Integer.parseInt(minDocTF.getText()), Integer.parseInt(maxDocTF.getText()),
+                Integer.parseInt(repExp3TF.getText()), Integer.parseInt(customersTF.getText()),
+                Integer.parseInt(adminWorkTF.getText()), Integer.parseInt(nursesTF.getText()),
+                Integer.parseInt(repTimeTB.getText()));
+    }
+    private void runExperiment2() {
+        LinkedList<String> list = app.experiment2(Integer.parseInt(doctorsTF.getText()),
+                Integer.parseInt(exp2RepTF.getText()), Integer.parseInt(exp2CustTF.getText()),
+                Integer.parseInt(adminWorkTF.getText()), Integer.parseInt(nursesTF.getText()),
+                Integer.parseInt(repTimeTB.getText()));
+        int i = 0;
+        int j = 0;
+        try {
+            for (String string : list) {
+                for (Object obj : parseExp2(string)) {
+                    tableModelEXP2.setValueAt(obj, i, j);
+                    j++;
+                }
+                j = 0;
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        exp2Table.setModel(tableModelEXP2);
     }
 
     private void runSimulation(int numberOfReplications, int seed,
@@ -158,11 +257,14 @@ public class MainWindow extends JFrame implements IObserver {
     public void update(Object o) {
         if(o == null) return;
 
-        if(o instanceof Double) {
-            replicationL.setText(String.format("Replication: %.0f" , (Double)o));
+        if(app.getExp3run() ) {
+            if(o instanceof HashMap) {
+                refreshEXP3((HashMap<String, Double>) o);
+            }
+            return;
         }
-        /*if(o instanceof HashMap) {
-            //System.out.println("map");
+
+        if(o instanceof HashMap) {
             refreshQueues((HashMap<String, Double>)o);
         }
         if(o instanceof LinkedList && !turboCB.isSelected()) {
@@ -172,26 +274,23 @@ public class MainWindow extends JFrame implements IObserver {
             refreshCustomers((ArrayList<String>)o);
         }
 
-*/        //System.out.println("This is from Main Window: " + ((HashMap<String, Double >)o).get("ActualSimulationTime"));
-
     }
 
     private void refreshQueues(HashMap<String, Double> stats) {
-        //HashMap<String, Double> stats = (HashMap<String, Double >)o;
-        //systemTime += stats.get("ActualSimulationTime");
         double tmpTime = systemTime + stats.get("ActualSimulationTime");
 
+        int seconds = (int)(tmpTime % 60);
         int minutes = (int)(tmpTime / 60);
         int hours = (minutes / 60) % 24;
         minutes = minutes % 60;
 
-        replicationL.setText(String.format("Replication: %.0f" , stats.get("CompleteReplications") + 1));
+        replicationL.setText(String.format("Actual replication: %.0f" , stats.get("CompleteReplications") + 1));
 
         //todo
         double replications = stats.get("CompleteReplications");
         if(replications == 0.0) { replications = 1.0; }
         if(turboCB.isSelected()) {
-            /*avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / replications));
+            avgTimeInRegQL.setText(String.format("Average time in Queue: %.4f", stats.get("SumTimeRegQueueGlobal") / replications));
             avgPplInRegQL.setText(String.format("Average ppl in reg Queue: %.4f", stats.get("RegisteredCustomersGlobal") / replications));
             utilRegL.setText(String.format("Utilization: %.4f ", stats.get("WorkerUtilizationGlobal") / replications * 100) + "%");
 
@@ -203,9 +302,11 @@ public class MainWindow extends JFrame implements IObserver {
             avgPplInVaccQL.setText(String.format("Average ppl in Queue: %.4f ", stats.get("VaccinatedCustomersGlobal") / replications));
             utilNurL.setText(String.format("Utilization: %.4f ", stats.get("NurseUtilizationGlobal") / replications * 100) + "%");
             avgPplInWRL.setText(String.format("Avg waiting room size: %.4f ", stats.get("WaitingRoomSizeGlobal") / replications ));
-            */
+            updateConfidanceInterval(stats.get("WaitingRoomSizeGlobal"), stats.get("WaitingRoomSizeGlobalSquared"), replications);
+
+
         } else {
-            systemTimeL.setText(String.format("System time: %02d : %02d", hours, minutes));
+            systemTimeL.setText(String.format("System time: %02d : %02d : %02d", hours, minutes, seconds));
             utilRegL.setText(String.format("Utilization: %.4f ", (stats.get("AdminWorkersUtilization") / stats.get("ActualSimulationTime") * 100)) + "%");
             availWorkL.setText("Available: " + stats.get("AdminWorkersAvailability"));
             pplInRegQL.setText("Ppl in Queue: " + stats.get("RegQueueSize"));
@@ -231,8 +332,6 @@ public class MainWindow extends JFrame implements IObserver {
 
     private void refreshEmployees(LinkedList<String> employees) {
 
-        //DefaultListModel<String> model = new DefaultListModel<>();
-        //System.out.println("List");
         int i = 0;
         int j = 0;
         try {
@@ -247,18 +346,15 @@ public class MainWindow extends JFrame implements IObserver {
         } catch (Exception e) {
             System.out.println(e.toString());
         }
-        //model.addElement("test");
         empTable.setModel(tableModel);
 
     }
 
     private void refreshCustomers(ArrayList<String> customers) {
         DefaultListModel<String> model = new DefaultListModel<>();
-        //System.out.println("List");
         for (String string : customers) {
             model.addElement(string);
         }
-        //model.addElement("test");
         list2.setModel(model);
 
     }
@@ -269,4 +365,47 @@ public class MainWindow extends JFrame implements IObserver {
         String[] tokens = string.split(delims);
         return new Object[]{tokens[0], tokens[4], tokens[2]};
     }
- }
+
+    private Object[] parseExp2(String string) {
+        //String phrase = "the music made   it   hard      to        concentrate";
+        String delims = "[ ]+";
+        String[] tokens = string.split(delims);
+        return new Object[]{tokens[0], tokens[1], tokens[2]};
+    }
+
+    private void refreshEXP3(HashMap<String, Double> stats) {
+        double replications = stats.get("CompleteReplications");
+        double pplInQ = stats.get("ExaminedCustomersGlobal") / replications;
+        int docs = (int)(double)stats.get("Doctors");
+        //avgPplInMedQL.setText(String.format("Average ppl in Queue: %.4f", stats.get("ExaminedCustomersGlobal") / replications));
+        System.out.println("" + docs + ", " + pplInQ);
+        xyseries.add(docs, pplInQ);
+        NumberAxis xAxis = new NumberAxis();
+        NumberAxis yAxis = new NumberAxis();
+        xAxis.setLabel("Number of Doctors");
+        yAxis.setLabel("Average Queue length");
+        xAxis.setAutoRangeIncludesZero(false);
+        yAxis.setAutoRangeIncludesZero(false);
+        XYPlot plot  = (XYPlot)chart.getPlot();
+        xAxis.setTickUnit(new NumberTickUnit(1));
+        plot.setRangeAxis(yAxis);
+        plot.setDomainAxis(xAxis);
+
+        tableModelEXP3.addRow(new Object[]{docs, pplInQ});
+    }
+
+    private void updateConfidanceInterval(double x, double x2, double rep) {
+        if(rep < 30) {
+            return;
+        }
+        //rep -= 1;
+        double significantPart = 1.0 / ( rep - 1.0);
+        double devLeft = significantPart * (x2/ rep);
+        double devRight = Math.pow((significantPart * (x / rep)), 2);
+
+        double deviation = Math.sqrt(devLeft  - devRight );
+        double leftInterval = (x / rep) - ((deviation * 1.96) / Math.sqrt(rep));
+        double rightInterval = (x / rep) + ((deviation * 1.96) / Math.sqrt(rep));
+        ciL.setText(String.format("<%.4f , %.4f>", leftInterval, rightInterval));
+    }
+}

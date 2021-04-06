@@ -1,4 +1,4 @@
-package Simulation;
+package Simulation.Generators;
 
 public class ExpRandomGenerator extends CustomRandomGenerator {
     private double m_mean;

@@ -1,6 +1,9 @@
 package VaccinationCenter;
 
 import Simulation.*;
+import Simulation.Generators.ExpRandomGenerator;
+import Simulation.Generators.NormalRandomGenerator;
+import Simulation.Generators.TriaRandomGenerator;
 import VaccinationCenter.Employee.AdminWorker;
 import VaccinationCenter.Employee.Doctor;
 import VaccinationCenter.Employee.Nurse;
@@ -67,7 +70,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
 
     }
 
-    private void init(int seed, int numOfAdminWorkers, int numOfDoctors, int numOfNurses, int maxCustomers) {
+    public void init(int seed, int numOfAdminWorkers, int numOfDoctors, int numOfNurses, int maxCustomers) {
         m_statistics = new HashMap<>();
         m_statistics.put("SumTimeRegQueue", 0.0);
         m_statistics.put("SumTimeMedQueue", 0.0);
@@ -111,6 +114,8 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         m_statistics.put("DoctorUtilizationGlobal", 0.0);
         m_statistics.put("NurseUtilizationGlobal", 0.0);
         m_statistics.put("WaitingRoomSizeGlobal", 0.0);
+        m_statistics.put("WaitingRoomSizeGlobalSquared", 0.0);
+        m_statistics.put("Doctors", 0.0);
 
         m_customerSequence = 0;
         m_seed = seed;
@@ -245,7 +250,7 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
 
     @Override
     protected void onSimulationStart() {
-
+        m_statistics.replace("Doctors", (double)m_doctors.size());
     }
 
     @Override
@@ -333,11 +338,17 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
                                 m_statistics.get("ActualSimulationTime")));
         m_statistics.replace("WaitingRoomSizeGlobal",
                 m_statistics.get("WaitingRoomSizeGlobal") +
-                        (m_statistics.get("SumWaitingRoomSize") /
+                        (m_statistics.get("SumTimeInWaitingRoom") /
                                 m_statistics.get("ActualSimulationTime")));
+
+        m_statistics.replace("WaitingRoomSizeGlobalSquared",
+                m_statistics.get("WaitingRoomSizeGlobalSquared") +
+                        (Math.pow((m_statistics.get("SumTimeInWaitingRoom") /
+                                m_statistics.get("ActualSimulationTime")), 2)));
 
         m_statistics.replace("CompleteReplications",
                 m_statistics.get("CompleteReplications").doubleValue() + 1);
+        //System.out.println(m_statistics.get("MissedCustomers"));
     }
 
     @Override
@@ -621,8 +632,8 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
         }
 
         m_statistics.replace("WaitingRoomSize", (double)m_waitingRoom.size());
-        m_statistics.replace("SumWaitingRoomSize",
-                m_statistics.get("SumWaitingRoomSize") + customer.getTimeWaiting());
+        m_statistics.replace("SumTimeInWaitingRoom",
+                m_statistics.get("SumTimeInWaitingRoom") + customer.getTimeWaiting());
 
     }
     // --------------------------------------------------------------------
@@ -630,7 +641,6 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
     public void notifyObservers() {
         m_statistics.replace("ActualSimulationTime", m_actSimTime);
         for (IObserver observer : m_observers) {
-            observer.update(m_statistics.get("CompleteReplications"));
             observer.update(m_statistics);
             observer.update(employeesToString());
             observer.update(customersToString());
@@ -659,5 +669,17 @@ public class VaccCenterSimCore extends EventSimulationCore implements ISubject {
             result.add(customer.toString());
         }
         return result;
+    }
+
+    public double getWorkersUtilization() {
+        return (m_statistics.get("AdminWorkersUtilization") /  m_statistics.get("ActualSimulationTime") * 100.0);
+    }
+
+    public double getDoctorsUtilization() {
+        return (m_statistics.get("DoctorsUtilization") /  m_statistics.get("ActualSimulationTime") * 100.0);
+    }
+
+    public double getNursesUtilization() {
+        return (m_statistics.get("NursesUtilization") /  m_statistics.get("ActualSimulationTime") * 100.0);
     }
 }

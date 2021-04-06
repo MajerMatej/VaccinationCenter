@@ -1,4 +1,4 @@
-package Simulation;
+package Simulation.Generators;
 
 public class TriaRandomGenerator extends CustomRandomGenerator {
     private double m_minValue;

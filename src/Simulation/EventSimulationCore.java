@@ -35,7 +35,11 @@ public abstract class EventSimulationCore extends SimulationCore{
                     }
                 }
             }
+            if(m_eventCalendar.size() == 1 && m_cooling && m_eventCalendar.peek() instanceof SystemEvent) {
+                return;
+            }
             Event event = m_eventCalendar.poll();
+
             m_actSimTime = event.getEventTime();
             event.execute();
             if(!m_turboMode && event instanceof SystemEvent) {

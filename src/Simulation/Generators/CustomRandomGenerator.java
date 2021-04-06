@@ -1,4 +1,4 @@
-package Simulation;
+package Simulation.Generators;
 
 import java.io.FileWriter;
 import java.io.IOException;

@@ -1,8 +1,6 @@
-package Simulation;
+package Simulation.Generators;
 
-import java.util.Random;
-
-public class NormalRandomGenerator extends Random {
+public class NormalRandomGenerator extends CustomRandomGenerator {
     private double m_min;
     private double m_max;
 
